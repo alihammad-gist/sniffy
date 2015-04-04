@@ -1,6 +1,9 @@
 package sniffy
 
-import "os"
+import (
+	"os"
+	"path/filepath"
+)
 
 func isDir(path string) bool {
 	fInfo, err := os.Stat(path)
@@ -8,4 +11,17 @@ func isDir(path string) bool {
 		return true
 	}
 	return false
+}
+
+func dirTree(root string) chan string {
+	dir := make(chan string)
+	go func() {
+		filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				dir <- path
+			}
+		})
+		close(dir)
+	}()
+	return dir
 }
