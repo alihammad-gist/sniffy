@@ -5,8 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-
-	"gopkg.in/fsnotify.v1"
 )
 
 const (
@@ -44,7 +42,7 @@ func NewWatcher(filters ...Filter) (*Watcher, error) {
 		filter:    FilterChain(filters...),
 	}
 	w.watch()
-	return w
+	return w, nil
 }
 
 func (w *Watcher) AddDir(path string) error {
@@ -70,6 +68,7 @@ func (w *Watcher) dirTree(root string) chan string {
 			}
 		})
 		close(dir)
+		return
 	}()
 	return dir
 }
