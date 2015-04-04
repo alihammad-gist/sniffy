@@ -3,8 +3,9 @@ package sniffy
 import (
 	"errors"
 	"log"
-
 	"gopkg.in/fsnotify.v1"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -42,7 +43,7 @@ func NewWatcher(filters ...Filter) (*Watcher, error) {
 		filter:    FilterChain(filters...),
 	}
 	w.watch()
-	return w
+	return w, nil
 }
 
 func (w *Watcher) AddDir(path string) error {
@@ -59,6 +60,23 @@ func (w *Watcher) Close() error {
 	return w.fswatcher.Close()
 }
 
+<<<<<<< HEAD
+=======
+func (w *Watcher) dirTree(root string) chan string {
+	dir := make(chan string)
+	go func() {
+		filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				dir <- path
+			}
+		})
+		close(dir)
+		return
+	}()
+	return dir
+}
+
+>>>>>>> 86a5844446b82a52e6364fd2ea9dac7842238129
 func (w *Watcher) watch() {
 	go func() {
 		for {
