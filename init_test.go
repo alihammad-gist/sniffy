@@ -1,13 +1,20 @@
 package sniffy_test
 
 import (
+	"io/ioutil"
 	"log"
 	"path/filepath"
+
+	"github.com/alihammad-gist/sniffy"
+	"gopkg.in/fsnotify.v1"
 
 	"os"
 )
 
 var Paths = map[string][]string{
+	"sniffy_test": {
+		"root.tree",
+	},
 	"sniffy_test/l1d1": {
 		"1.txt",
 	},
@@ -41,12 +48,12 @@ var Paths = map[string][]string{
 	},
 }
 
-func getDir() {
+func getDir() string {
 	tmp := os.TempDir()
-	for d, fs := range Dirs {
+	os.RemoveAll(filepath.Join(tmp, "sniffy_test"))
+	for d, fs := range Paths {
 		path := filepath.Join(tmp, d)
-		os.Remove(path)
-		if err := os.MkdirAll(path, os.ModeDir); err != nil {
+		if err := os.MkdirAll(path, 0755); err != nil {
 			log.Fatal(err)
 		}
 		for _, f := range fs {
@@ -58,4 +65,32 @@ func getDir() {
 		}
 	}
 	return filepath.Join(tmp, "sniffy_test")
+}
+
+func triggerOperation(path string, op fsnotify.Op) {
+	switch op {
+	case sniffy.Create:
+		if _, err := os.Create(path); err != nil {
+			log.Fatal("Triggering C-operation error:", err)
+		}
+	case sniffy.Remove:
+		if err := os.RemoveAll(path); err != nil {
+			log.Fatal("Triggering R-operation error:", err)
+		}
+	case sniffy.Rename:
+		if err := os.Rename(
+			path,
+			filepath.Join(filepath.Dir(path), "renamed.txt"),
+		); err != nil {
+			log.Fatal("Triggering Rn-operation error:", err)
+		}
+	case sniffy.Write:
+		if err := ioutil.WriteFile(
+			path,
+			[]byte("hello@!#"),
+			0755,
+		); err != nil {
+			log.Fatal("Triggering w-operation error:", err)
+		}
+	}
 }

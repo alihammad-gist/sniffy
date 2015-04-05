@@ -2,10 +2,8 @@ package sniffy
 
 import (
 	"errors"
-	"log"
+
 	"gopkg.in/fsnotify.v1"
-	"os"
-	"path/filepath"
 )
 
 const (
@@ -24,8 +22,8 @@ type (
 	Watcher struct {
 		fswatcher *fsnotify.Watcher
 		filter    Filter
-		Event     chan Event
-		Error     chan error
+		Events    chan Event
+		Errors    chan error
 	}
 )
 
@@ -41,6 +39,8 @@ func NewWatcher(filters ...Filter) (*Watcher, error) {
 	w := &Watcher{
 		fswatcher: fswatcher,
 		filter:    FilterChain(filters...),
+		Events:    make(chan Event),
+		Errors:    make(chan error),
 	}
 	w.watch()
 	return w, nil
@@ -50,8 +50,10 @@ func (w *Watcher) AddDir(path string) error {
 	if !isDir(path) {
 		return ErrNotADir
 	}
-	for d := range w.dirTree(path) {
-		w.fswatcher.Add(d)
+	for d := range dirTree(path) {
+		if err := w.fswatcher.Add(d); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -60,34 +62,16 @@ func (w *Watcher) Close() error {
 	return w.fswatcher.Close()
 }
 
-<<<<<<< HEAD
-=======
-func (w *Watcher) dirTree(root string) chan string {
-	dir := make(chan string)
-	go func() {
-		filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-			if info.IsDir() {
-				dir <- path
-			}
-		})
-		close(dir)
-		return
-	}()
-	return dir
-}
-
->>>>>>> 86a5844446b82a52e6364fd2ea9dac7842238129
 func (w *Watcher) watch() {
 	go func() {
 		for {
 			select {
-			case ev := <-w.fswatcher.Events:
-				if w.filter(ev) {
-					w.Event <- Event(ev)
+			case fsev := <-w.fswatcher.Events:
+				if w.filter(fsev) {
+					w.Events <- Event(fsev)
 				}
 			case err := <-w.fswatcher.Errors:
-				log.Println("Error: ", err)
-				w.Error <- err
+				w.Errors <- err
 			}
 		}
 	}()

@@ -20,6 +20,7 @@ func dirTree(root string) chan string {
 			if info.IsDir() {
 				dir <- path
 			}
+			return nil
 		})
 		close(dir)
 	}()
