@@ -1,6 +1,7 @@
 package sniffy_test
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 
@@ -82,6 +83,7 @@ func TestRecurWatch(t *testing.T) {
 	defer w.Close()
 	for path, op := range ops {
 		triggerOperation(path, op)
+		log.Println("hi")
 		select {
 		case e := <-w.Events:
 			if e.Name != path || e.Op != op {

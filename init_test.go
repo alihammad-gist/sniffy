@@ -70,6 +70,12 @@ func getDir() string {
 func triggerOperation(path string, op fsnotify.Op) {
 	switch op {
 	case sniffy.Create:
+		if filepath.Ext(path) == "" {
+			if err := os.MkdirAll(path, 0755); err != nil {
+				log.Fatal("Triggering C-file-op error:", err)
+			}
+			break
+		}
 		if _, err := os.Create(path); err != nil {
 			log.Fatal("Triggering C-operation error:", err)
 		}
