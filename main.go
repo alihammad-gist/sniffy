@@ -2,6 +2,7 @@ package sniffy
 
 import (
 	"errors"
+	"sync"
 
 	"gopkg.in/fsnotify.v1"
 )
@@ -20,10 +21,12 @@ type (
 	Event fsnotify.Event
 
 	Watcher struct {
+		wMutex    sync.Mutex
 		fswatcher *fsnotify.Watcher
-		filter    Filter
-		Events    chan Event
-		Errors    chan error
+
+		filter Filter
+		Events chan Event
+		Errors chan error
 	}
 )
 
@@ -67,6 +70,11 @@ func (w *Watcher) watch() {
 		for {
 			select {
 			case fsev := <-w.fswatcher.Events:
+				if isDir(fsev.Name) {
+					w.wMutex.Lock()
+					w.AddDir(fsev.Name)
+					w.wMutex.Unlock()
+				}
 				if w.filter(fsev) {
 					w.Events <- Event(fsev)
 				}

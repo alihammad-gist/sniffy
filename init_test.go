@@ -1,9 +1,11 @@
 package sniffy_test
 
 import (
+	"errors"
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/alihammad-gist/sniffy"
 	"gopkg.in/fsnotify.v1"
@@ -11,42 +13,59 @@ import (
 	"os"
 )
 
-var Paths = map[string][]string{
-	"sniffy_test": {
-		"root.tree",
-	},
-	"sniffy_test/l1d1": {
-		"1.txt",
-	},
-	"sniffy_test/l1d1/l2d1": {
-		"index.php",
-		"default.css",
-	},
-	"sniffy_test/l1d1/l2d2": {
-		"main.cpp",
-	},
-	"sniffy_test/l1d2": {
-		"fileserver.py",
-	},
-	"sniffy_test/l1d2/l2d1": {
-		"hello",
-	},
-	"sniffy_test/l1d2/l2d2": {
-		"main.less",
-		"vars.less",
-	},
-	"sniffy_test/l1d3": {
-		"init.cfx",
-		"global.log",
-	},
-	"sniffy_test/l1d3/l2d1": {
-		"main.sass",
-		"colors.scss",
-	},
-	"sniffy_test/l1d3/l2d2": {
-		"pre.xstream",
-	},
-}
+type (
+	Op struct {
+		path string
+		op   fsnotify.Op
+	}
+)
+
+const (
+	WaitDuration    = time.Second
+	RenamedFileName = "renamed.txt"
+)
+
+var (
+	ErrWaitTimeout      = errors.New("Event taking too long")
+	ErrInvalidEventPath = errors.New("Unexpected path")
+
+	Paths = map[string][]string{
+		"sniffy_test": {
+			"root.tree",
+		},
+		"sniffy_test/l1d1": {
+			"1.txt",
+		},
+		"sniffy_test/l1d1/l2d1": {
+			"index.php",
+			"default.css",
+		},
+		"sniffy_test/l1d1/l2d2": {
+			"main.cpp",
+		},
+		"sniffy_test/l1d2": {
+			"fileserver.py",
+		},
+		"sniffy_test/l1d2/l2d1": {
+			"hello",
+		},
+		"sniffy_test/l1d2/l2d2": {
+			"main.less",
+			"vars.less",
+		},
+		"sniffy_test/l1d3": {
+			"init.cfx",
+			"global.log",
+		},
+		"sniffy_test/l1d3/l2d1": {
+			"main.sass",
+			"colors.scss",
+		},
+		"sniffy_test/l1d3/l2d2": {
+			"pre.xstream",
+		},
+	}
+)
 
 func getDir() string {
 	tmp := os.TempDir()
