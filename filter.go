@@ -1,6 +1,10 @@
 package sniffy
 
-import "gopkg.in/fsnotify.v1"
+import (
+	"path/filepath"
+
+	"gopkg.in/fsnotify.v1"
+)
 
 // This factory will concatinate multiple filters into
 // one
@@ -28,13 +32,15 @@ func OpFilter(ops ...fsnotify.Op) Filter {
 	}
 }
 
-func AutoWatch(w Watcher) Filter {
+// Returns true only if event occured on files with
+// provided extensions
+func ExtFilter(exts ...string) Filter {
 	return func(e fsnotify.Event) bool {
-		if e.Op == fsnotify.Create {
-			if isDir(e.Name) {
-				w.AddDir(e.Name)
+		for _, ext := range exts {
+			if filepath.Ext(e.Name) == ext {
+				return true
 			}
 		}
-		return true
+		return false
 	}
 }
