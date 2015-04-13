@@ -46,3 +46,24 @@ func TestExtFilter(t *testing.T) {
 		}
 	}
 }
+
+func TestPathFilter(t *testing.T) {
+	pathf := sniffy.PathFilter("/name/app", "/usr/bin")
+	evs := []struct {
+		e sniffy.Event
+		x bool
+	}{
+		{sniffy.Event{"/home/ali.php", sniffy.Chmod}, false},
+		{sniffy.Event{"/name/app/vars.sass", sniffy.Chmod}, true},
+		{sniffy.Event{"/home/hello/main.css", sniffy.Chmod}, false},
+		{sniffy.Event{"/home/ali.php/main.txt", sniffy.Chmod}, false},
+		{sniffy.Event{"/home/ali/bin", sniffy.Chmod}, false},
+		{sniffy.Event{"/usr/bin/ali", sniffy.Chmod}, true},
+	}
+	for _, ev := range evs {
+		if pathf(fsnotify.Event(ev.e)) != ev.x {
+			t.Logf("Expected %t Event %v", ev.x, ev.e)
+			t.Fail()
+		}
+	}
+}

@@ -2,6 +2,7 @@ package sniffy
 
 import (
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/fsnotify.v1"
 )
@@ -38,6 +39,19 @@ func ExtFilter(exts ...string) Filter {
 	return func(e fsnotify.Event) bool {
 		for _, ext := range exts {
 			if filepath.Ext(e.Name) == ext {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// Returns true only if event occurent on a child
+// of provided paths
+func PathFilter(paths ...string) Filter {
+	return func(e fsnotify.Event) bool {
+		for _, p := range paths {
+			if strings.HasPrefix(e.Name+"/", p) {
 				return true
 			}
 		}
