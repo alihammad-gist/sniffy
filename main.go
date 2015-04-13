@@ -16,16 +16,20 @@ const (
 )
 
 type (
+	Event fsnotify.Event
+
 	Filter func(fsnotify.Event) bool
 
-	Event fsnotify.Event
+	EventTransmitter struct {
+		Events chan Event
+		filter Filter
+	}
 
 	Watcher struct {
 		wMutex    sync.Mutex
 		fswatcher *fsnotify.Watcher
 
-		filter Filter
-		Events chan Event
+		etrans []*EventTransmitter
 		Errors chan error
 	}
 )
@@ -34,15 +38,14 @@ var (
 	ErrNotADir = errors.New("Provided path is not a directory")
 )
 
-func NewWatcher(filters ...Filter) (*Watcher, error) {
+func NewWatcher(ets ...*EventTransmitter) (*Watcher, error) {
 	fswatcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
 	w := &Watcher{
 		fswatcher: fswatcher,
-		filter:    FilterChain(filters...),
-		Events:    make(chan Event),
+		etrans:    ets,
 		Errors:    make(chan error),
 	}
 	w.watch()
@@ -77,8 +80,8 @@ func (w *Watcher) watch() {
 				if isDir(fsev.Name) {
 					w.AddDir(fsev.Name)
 				}
-				if w.filter(fsev) {
-					w.Events <- Event(fsev)
+				for _, e := range w.etrans {
+					e.Transmit(fsev)
 				}
 			case err := <-w.fswatcher.Errors:
 				w.Errors <- err

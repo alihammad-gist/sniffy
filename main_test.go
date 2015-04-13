@@ -22,7 +22,8 @@ func TestRecurWatch(t *testing.T) {
 		Op{filepath.Join(dir, "l1d1/l2d2/l3d1/tree.log"), sniffy.Remove},
 	}
 	for _, xOp := range ops {
-		w, err := sniffy.NewWatcher()
+		trans := sniffy.Transmitter()
+		w, err := sniffy.NewWatcher(trans)
 		if err != nil {
 			t.Log(err)
 			t.Fail()
@@ -30,7 +31,7 @@ func TestRecurWatch(t *testing.T) {
 		w.AddDir(dir)
 		triggerOperation(xOp.path, xOp.op)
 		select {
-		case e := <-w.Events:
+		case e := <-trans.Events:
 			if e.Name != xOp.path || e.Op != xOp.op {
 				t.Log("Expected", xOp.path, xOp.op, "Actual", e.Name, e.Op)
 				t.Fail()
