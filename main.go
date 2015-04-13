@@ -54,7 +54,11 @@ func (w *Watcher) AddDir(path string) error {
 		return ErrNotADir
 	}
 	for d := range dirTree(path) {
-		if err := w.fswatcher.Add(d); err != nil {
+		w.wMutex.Lock()
+		err := w.fswatcher.Add(d)
+		w.wMutex.Unlock()
+
+		if err != nil {
 			return err
 		}
 	}
@@ -71,9 +75,7 @@ func (w *Watcher) watch() {
 			select {
 			case fsev := <-w.fswatcher.Events:
 				if isDir(fsev.Name) {
-					w.wMutex.Lock()
 					w.AddDir(fsev.Name)
-					w.wMutex.Unlock()
 				}
 				if w.filter(fsev) {
 					w.Events <- Event(fsev)
