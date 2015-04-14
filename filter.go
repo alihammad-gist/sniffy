@@ -3,6 +3,7 @@ package sniffy
 import (
 	"path/filepath"
 	"strings"
+	"time"
 
 	"gopkg.in/fsnotify.v1"
 )
@@ -46,9 +47,9 @@ func ExtFilter(exts ...string) Filter {
 	}
 }
 
-// Returns true only if event occurent on a child
+// Returns true only if event occured on a child
 // of provided paths
-func PathFilter(paths ...string) Filter {
+func ExcludeChildFilter(paths ...string) Filter {
 	return func(e fsnotify.Event) bool {
 		for _, p := range paths {
 			if strings.HasPrefix(e.Name+"/", p) {
@@ -56,5 +57,41 @@ func PathFilter(paths ...string) Filter {
 			}
 		}
 		return false
+	}
+}
+
+// Returns false if Event path is one of the provided paths
+func ExcludePathFilter(paths ...string) Filter {
+	return func(e fsnotify.Event) bool {
+		for _, p := range paths {
+			if p == e.Name {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+// Returns false if last event occured on the same file
+// within the specified duration
+func TooSoonFilter(d time.Duration) Filter {
+	var (
+		last struct {
+			path string
+			time time.Time
+		}
+	)
+	return func(e fsnotify.Event) bool {
+		now := time.Now()
+		if !last.time.IsZero() {
+			if e.Name == last.path {
+				if now.Sub(last.time) <= d {
+					return false
+				}
+			}
+		}
+		last.path = e.Name
+		last.time = now
+		return true
 	}
 }

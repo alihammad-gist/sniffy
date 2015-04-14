@@ -1,9 +1,11 @@
 package sniffy_test
 
 import (
+	"testing"
+	"time"
+
 	"github.com/alihammad-gist/sniffy"
 	"gopkg.in/fsnotify.v1"
-	"testing"
 )
 
 func TestOpFilter(t *testing.T) {
@@ -47,8 +49,8 @@ func TestExtFilter(t *testing.T) {
 	}
 }
 
-func TestPathFilter(t *testing.T) {
-	pathf := sniffy.PathFilter("/name/app", "/usr/bin")
+func TestExcludeChild(t *testing.T) {
+	childf := sniffy.ExcludeChildFilter("/name/app", "/usr/bin")
 	evs := []struct {
 		e sniffy.Event
 		x bool
@@ -61,9 +63,56 @@ func TestPathFilter(t *testing.T) {
 		{sniffy.Event{"/usr/bin/ali", sniffy.Chmod}, true},
 	}
 	for _, ev := range evs {
+		if childf(fsnotify.Event(ev.e)) != ev.x {
+			t.Logf("Expected %t Event %v", ev.x, ev.e)
+			t.Fail()
+		}
+	}
+}
+
+func TestExcludePathFilter(t *testing.T) {
+	pathf := sniffy.ExcludePathFilter("/home/ali/bin", "/usr/bin/ali")
+	evs := []struct {
+		e sniffy.Event
+		x bool
+	}{
+		{sniffy.Event{"/home/ali.php", sniffy.Chmod}, true},
+		{sniffy.Event{"/name/app/vars.sass", sniffy.Chmod}, true},
+		{sniffy.Event{"/home/hello/main.css", sniffy.Chmod}, true},
+		{sniffy.Event{"/home/ali.php/main.txt", sniffy.Chmod}, true},
+		{sniffy.Event{"/home/ali/bin", sniffy.Chmod}, false},
+		{sniffy.Event{"/usr/bin/ali", sniffy.Chmod}, false},
+	}
+	for _, ev := range evs {
 		if pathf(fsnotify.Event(ev.e)) != ev.x {
 			t.Logf("Expected %t Event %v", ev.x, ev.e)
 			t.Fail()
+		}
+	}
+}
+
+func TestTooSoonFilter(t *testing.T) {
+	soonf := sniffy.TooSoonFilter(time.Millisecond * 500)
+	evs := []struct {
+		e sniffy.Event
+		d time.Duration
+		x bool
+	}{
+		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond, true},
+		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond * 501, true},
+		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond * 500, false},
+		{sniffy.Event{"/path/2", sniffy.Chmod}, time.Millisecond, true},
+		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond, true},
+		{sniffy.Event{"/path/2", sniffy.Chmod}, time.Millisecond, true},
+		{sniffy.Event{"/path/2", sniffy.Chmod}, time.Millisecond, false},
+		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond, true},
+		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond, false},
+	}
+
+	for _, ev := range evs {
+		<-time.After(ev.d)
+		if soonf(fsnotify.Event(ev.e)) != ev.x {
+			t.Logf("Expected %t Event %v Duration %v", ev.x, ev.e, ev.d)
 		}
 	}
 }
