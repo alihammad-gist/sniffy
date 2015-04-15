@@ -50,7 +50,7 @@ func TestExtFilter(t *testing.T) {
 }
 
 func TestExcludeChild(t *testing.T) {
-	childf := sniffy.ExcludeChildFilter("/name/app", "/usr/bin")
+	childf := sniffy.ChildFilter("/name/app", "/usr/bin")
 	evs := []struct {
 		e sniffy.Event
 		x bool

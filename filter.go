@@ -50,7 +50,7 @@ func ExtFilter(exts ...string) Filter {
 // Returns true only if event occured on a child
 // of provided paths
 // paths must be absolute
-func IsChildFilter(paths ...string) Filter {
+func ChildFilter(paths ...string) Filter {
 	return func(e fsnotify.Event) bool {
 		for _, p := range paths {
 			if strings.HasPrefix(e.Name+"/", p) {
