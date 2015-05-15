@@ -3,6 +3,7 @@ package sniffy
 import (
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"gopkg.in/fsnotify.v1"
@@ -11,7 +12,10 @@ import (
 // This factory will concatinate multiple filters into
 // one
 func FilterChain(fs ...Filter) Filter {
+	m := &sync.Mutex{}
 	return func(e fsnotify.Event) bool {
+		m.Lock()
+		defer m.Unlock()
 		for _, f := range fs {
 			if !f(e) {
 				return false
@@ -89,6 +93,20 @@ func TooSoonFilter(d time.Duration) Filter {
 			}
 		}
 		lastTime = now
+		return true
+	}
+}
+
+// Returns false if event occured on file with provided
+// shell filename patterns, pattern will be matched against
+// filename not the absolute path
+func IgnoreFnPatternFilter(pats ...string) Filter {
+	return func(e fsnotify.Event) bool {
+		for _, p := range pats {
+			if ok, _ := filepath.Match(p, filepath.Base(e.Name)); ok {
+				return false
+			}
+		}
 		return true
 	}
 }

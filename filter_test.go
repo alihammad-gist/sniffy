@@ -39,6 +39,8 @@ func TestExtFilter(t *testing.T) {
 		{sniffy.Event{"/home/hello/main.css", sniffy.Chmod}, true},
 		{sniffy.Event{"/home/ali.php/main.txt", sniffy.Chmod}, false},
 		{sniffy.Event{"/home/ali", sniffy.Chmod}, false},
+		{sniffy.Event{"/home/ali/ha/121313", sniffy.Chmod}, false},
+		{sniffy.Event{"/home/ali/.index.php~", sniffy.Chmod}, false},
 	}
 
 	for _, ev := range evs {
@@ -115,6 +117,32 @@ func TestTooSoonFilter(t *testing.T) {
 		<-time.After(ev.d)
 		if soonf(fsnotify.Event(ev.e)) != ev.x {
 			t.Logf("Expected %t Event %v Duration %v", ev.x, ev.e, ev.d)
+			t.Fail()
+		}
+	}
+}
+
+func TestIgnoreFnPatternFilter(t *testing.T) {
+	var (
+		evs = []struct {
+			e sniffy.Event
+			x bool
+		}{
+			{sniffy.Event{"/path1/2.txt", sniffy.Chmod}, true},
+			{sniffy.Event{"/path324/.3.txt", sniffy.Chmod}, false},
+			{sniffy.Event{"/a/b/c/d.php", sniffy.Chmod}, false},
+			{sniffy.Event{"/a/b/c.hello", sniffy.Chmod}, true},
+			{sniffy.Event{"x/y/.z.cpp", sniffy.Chmod}, false},
+		}
+
+		pat = []string{".??[^.]*", "*.php"}
+
+		fil = sniffy.IgnoreFnPatternFilter(pat...)
+	)
+
+	for _, ev := range evs {
+		if fil(fsnotify.Event(ev.e)) != ev.x {
+			t.Errorf("IgnoreFnPatterFilter: Filename  %s, Expected  %t", ev.e.Name, ev.x)
 			t.Fail()
 		}
 	}

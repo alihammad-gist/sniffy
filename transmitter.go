@@ -1,8 +1,6 @@
 package sniffy
 
-import (
-	"gopkg.in/fsnotify.v1"
-)
+import "gopkg.in/fsnotify.v1"
 
 // Creates a new filter and makes the channel to be used
 // for Event transmission
