@@ -100,19 +100,22 @@ func TestTooSoonFilter(t *testing.T) {
 	}{
 		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond, true},
 		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond * 501, true},
-		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond * 500, false},
-		{sniffy.Event{"/path/2", sniffy.Chmod}, time.Millisecond, true},
-		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond, true},
-		{sniffy.Event{"/path/2", sniffy.Chmod}, time.Millisecond, true},
+		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond * 500, true},
 		{sniffy.Event{"/path/2", sniffy.Chmod}, time.Millisecond, false},
-		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond, true},
 		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond, false},
+		{sniffy.Event{"/path/2", sniffy.Chmod}, time.Millisecond, false},
+		{sniffy.Event{"/path/2", sniffy.Chmod}, time.Millisecond, false},
+		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond, false},
+		{sniffy.Event{"/path/1", sniffy.Chmod}, time.Millisecond, false},
+		{sniffy.Event{"/path/1", sniffy.Create}, time.Millisecond * 400, false},
+		{sniffy.Event{"/path/1", sniffy.Create}, time.Millisecond * 500, true},
 	}
 
 	for _, ev := range evs {
 		<-time.After(ev.d)
 		if soonf(fsnotify.Event(ev.e)) != ev.x {
 			t.Logf("Expected %t Event %v Duration %v", ev.x, ev.e, ev.d)
+			t.Fail()
 		}
 	}
 }

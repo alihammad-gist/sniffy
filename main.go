@@ -21,8 +21,10 @@ type (
 	Filter func(fsnotify.Event) bool
 
 	EventTransmitter struct {
-		Events chan Event
-		filter Filter
+		Events        chan Event
+		filter        Filter
+		lastEvent     Event
+		lastEventLock sync.Mutex
 	}
 
 	Watcher struct {

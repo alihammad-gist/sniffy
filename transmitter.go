@@ -15,7 +15,18 @@ func Transmitter(filters ...Filter) *EventTransmitter {
 }
 
 func (et *EventTransmitter) Transmit(e fsnotify.Event) {
+	et.lastEventLock.Lock()
+	defer et.lastEventLock.Unlock()
+
 	if et.filter(e) {
 		et.Events <- Event(e)
+		et.lastEvent = Event(e)
 	}
+}
+
+func (et *EventTransmitter) LastEvent() Event {
+	et.lastEventLock.Lock()
+	defer et.lastEventLock.Unlock()
+
+	return et.lastEvent
 }

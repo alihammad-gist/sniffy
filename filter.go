@@ -74,26 +74,21 @@ func ExcludePathFilter(paths ...string) Filter {
 	}
 }
 
-// Returns false if last event occured on the same file
+// Returns false if last event occured
 // within the specified duration
+// It can be used to filter out simultaneous events
 func TooSoonFilter(d time.Duration) Filter {
 	var (
-		last struct {
-			path string
-			time time.Time
-		}
+		lastTime time.Time
 	)
-	return func(e fsnotify.Event) bool {
+	return func(_ fsnotify.Event) bool {
 		now := time.Now()
-		if !last.time.IsZero() {
-			if e.Name == last.path {
-				if now.Sub(last.time) <= d {
-					return false
-				}
+		if !lastTime.IsZero() {
+			if now.Sub(lastTime) <= d {
+				return false
 			}
 		}
-		last.path = e.Name
-		last.time = now
+		lastTime = now
 		return true
 	}
 }
